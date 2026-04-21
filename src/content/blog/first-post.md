@@ -1,7 +1,9 @@
 ---
 title: 'First post'
 description: 'Lorem ipsum dolor sit amet'
-pubDate: 'Jul 08 2022'
+date: '2022-07-08'
+timestamp: '17:00'
+writer_age_days: '1'
 heroImage: '../../assets/blog-placeholder-3.jpg'
 ---
 
