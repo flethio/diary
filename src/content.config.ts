@@ -1,21 +1,21 @@
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
-import { z } from 'astro/zod'; // Bisa juga dari 'astro/zod'
+import { z } from 'astro/zod';
 
 const blog = defineCollection({
-    // Load Markdown and MDX files in the `src/content/blog/` directory.
-    loader: glob({ base: './src/content/blog', pattern: '**/*.{md,mdx}' }),
-    // Type-check frontmatter using a schema
-    schema: z.object({
-        title: z.string(),
-        date: z.coerce.date(), // Kita pakai 'date' sesuai output bot
-        timestamp: z.string(),
-        writer_age_days: z.string(),
-        mood: z.string().optional(),
-        // Opsional: jika kamu masih ingin pakai fitur gambar atau deskripsi manual
-        description: z.string().optional(),
-        heroImage: z.string().optional(),
-    }),
+	loader: glob({ base: './src/content/blog', pattern: '**/*.{md,mdx}' }),
+	schema: ({ image }) =>
+		z.object({
+			title: z.string(),
+			date: z.coerce.date(),
+			writer_age_days: z.string(),
+			category: z.enum(['Frontend', 'GameDev', 'Linux', 'School', 'Life']).optional(),
+			productivity_score: z.number().int().min(1).max(5).optional(),
+			timestamp: z.string().optional(),
+			mood: z.string().optional(),
+			description: z.string().optional(),
+			heroImage: image().optional(),
+		}),
 });
 
 export const collections = { blog };

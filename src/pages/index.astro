@@ -1,84 +1,188 @@
 ---
 import BaseHead from '../components/BaseHead.astro';
-import Footer from '../components/Footer.astro';
-import Header from '../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 import { getCollection } from 'astro:content';
 
-// Ambil semua catatan dan urutkan dari yang terbaru
-const posts = (await getCollection('blog')).sort(
-	(a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+const posts = (await getCollection('blog')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const totalLogs = posts.length;
+const now = new Date();
+
+const categoryCounts = posts.reduce(
+	(acc, post) => {
+		const category = post.data.category ?? 'Uncategorized';
+		acc[category] = (acc[category] ?? 0) + 1;
+		return acc;
+	},
+	{} as Record<string, number>
 );
+
+const mostActiveCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0] ?? ['None', 0];
+const categoryOrder = ['Frontend', 'GameDev', 'Linux', 'School', 'Life'] as const;
+const categoryBreakdown = categoryOrder.map((category) => ({
+	category,
+	count: categoryCounts[category] ?? 0,
+}));
+
+const currentMonthScores = posts
+	.filter(
+		(post) =>
+			typeof post.data.productivity_score === 'number' &&
+			post.data.date.getMonth() === now.getMonth() &&
+			post.data.date.getFullYear() === now.getFullYear()
+	)
+	.map((post) => post.data.productivity_score as number);
+
+const avgProductivity = currentMonthScores.length
+	? (currentMonthScores.reduce((sum, score) => sum + score, 0) / currentMonthScores.length).toFixed(2)
+	: 'N/A';
+
+const categoryTone: Record<string, { border: string; badge: string }> = {
+	Frontend: { border: 'border-sky-500/40', badge: 'bg-sky-500/15 text-sky-200 ring-sky-500/35' },
+	GameDev: { border: 'border-amber-500/40', badge: 'bg-amber-500/15 text-amber-200 ring-amber-500/35' },
+	Linux: { border: 'border-emerald-500/40', badge: 'bg-emerald-500/15 text-emerald-200 ring-emerald-500/35' },
+	School: { border: 'border-cyan-500/40', badge: 'bg-cyan-500/15 text-cyan-200 ring-cyan-500/35' },
+	Life: { border: 'border-rose-500/40', badge: 'bg-rose-500/15 text-rose-200 ring-rose-500/35' },
+	Uncategorized: {
+		border: 'border-slate-600/70',
+		badge: 'bg-slate-700/40 text-slate-200 ring-slate-600/70',
+	},
+};
+
+const extractPreview = (body: string) => {
+	const lines = body.split('\n');
+	const progressHeadingIndex = lines.findIndex((line) => /^#{1,6}\s*progress\b/i.test(line.trim()));
+
+	if (progressHeadingIndex >= 0) {
+		const progressBullets: string[] = [];
+		for (let i = progressHeadingIndex + 1; i < lines.length; i += 1) {
+			const line = lines[i].trim();
+			if (!line && progressBullets.length === 0) {
+				continue;
+			}
+			if (/^#{1,6}\s+/.test(line) && progressBullets.length > 0) {
+				break;
+			}
+			const bulletMatch = line.match(/^[-*+]\s+(.+)/);
+			if (bulletMatch) {
+				progressBullets.push(bulletMatch[1].trim());
+				if (progressBullets.length === 3) {
+					break;
+				}
+			} else if (progressBullets.length > 0 && line) {
+				break;
+			}
+		}
+
+		if (progressBullets.length > 0) {
+			return progressBullets.map((item) => `• ${item}`).join(' ');
+		}
+	}
+
+	const plainText = lines
+		.map((line) => line.trim())
+		.filter((line) => line.length > 0 && !/^#{1,6}\s+/.test(line))
+		.join(' ')
+		.replace(/!\[[^\]]*]\([^)]*\)/g, '')
+		.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+		.replace(/[*_`~]/g, '')
+		.replace(/\s+/g, ' ')
+		.trim();
+
+	if (!plainText) return 'No details logged for this entry yet.';
+
+	return plainText.length > 180 ? `${plainText.slice(0, 180)}…` : plainText;
+};
 ---
 
 <!doctype html>
-<html lang="id">
+<html lang="en">
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-		<style>
-			main {
-				width: 960px;
-			}
-			.log-container {
-				margin-top: 2rem;
-			}
-			.log-card {
-				padding: 1.5rem;
-				border: 1px solid #e5e7eb;
-				border-radius: 12px;
-				margin-bottom: 1.5rem;
-				transition: transform 0.2s;
-			}
-			.log-card:hover {
-				transform: translateY(-2px);
-				border-color: #3b82f6;
-			}
-			.meta {
-				font-size: 0.8rem;
-				color: #6b7280;
-				margin-bottom: 0.5rem;
-			}
-			.age-badge {
-				background: #eff6ff;
-				color: #1d4ed8;
-				padding: 2px 8px;
-				border-radius: 99px;
-				font-weight: bold;
-			}
-		</style>
 	</head>
-	<body>
-		<Header />
-		<main>
-			<h1>🚀 Thio's Activity Log</h1>
-			<p>Catatan otomatis setiap jam 17:00 WITA untuk nge-track progres belajar.</p>
-
-			<section class="log-container">
-				{
-					posts.map((post) => (
-						<div class="log-card">
-							<div class="meta">
-								<time datetime={post.data.date.toISOString()}>
-									{post.data.date.toLocaleDateString('id-ID', {
-										day: 'numeric',
-										month: 'long',
-										year: 'numeric',
-									})}
-								</time> 
-								• <span>{post.data.timestamp} WITA</span>
-							</div>
-							<h3 style="margin: 0.5rem 0;">
-								<a href={`/blog/${post.slug}/`}>{post.data.title}</a>
-							</h3>
-							<p style="font-size: 0.9rem; color: #4b5563;">
-								Status: <span class="age-badge">⏳ {post.data.writer_age_days}</span> 
-								{post.data.mood && <span> • ✨ {post.data.mood}</span>}
-							</p>
+	<body class="bg-slate-950 text-slate-100">
+		<main class="min-h-screen !w-full !max-w-none px-4 py-8 sm:px-6 lg:px-10">
+			<div class="mx-auto w-full max-w-5xl">
+				<header class="mb-8 rounded-2xl border border-slate-800 bg-slate-900/85 p-5 shadow-2xl shadow-slate-950/40 sm:p-7">
+					<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+						<div>
+							<p class="font-mono text-xs uppercase tracking-[0.25em] text-slate-400">System Status</p>
+							<h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-100 sm:text-4xl">Life Changelog</h1>
 						</div>
-					))
-				}
-			</section>
+						<p class="text-sm text-slate-400">Structured personal and technical activity feed</p>
+					</div>
+
+					<div class="grid gap-3 sm:grid-cols-3">
+						<section class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+							<p class="font-mono text-xs uppercase tracking-[0.2em] text-slate-400">Total Logs</p>
+							<p class="mt-2 text-2xl font-semibold text-slate-100">{totalLogs}</p>
+						</section>
+						<section class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+							<p class="font-mono text-xs uppercase tracking-[0.2em] text-slate-400">Most Active Category</p>
+							<p class="mt-2 text-2xl font-semibold text-slate-100">{mostActiveCategory[0]}</p>
+							<p class="text-xs text-slate-400">{mostActiveCategory[1]} logs</p>
+						</section>
+						<section class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+							<p class="font-mono text-xs uppercase tracking-[0.2em] text-slate-400">Avg Productivity</p>
+							<p class="mt-2 text-2xl font-semibold text-slate-100">{avgProductivity}</p>
+							<p class="text-xs text-slate-400">Current month</p>
+						</section>
+					</div>
+
+					<div class="mt-4 flex flex-wrap gap-2">
+						{categoryBreakdown.map((item) => (
+							<span class="rounded-full border border-slate-700 bg-slate-950/70 px-3 py-1.5 font-mono text-xs text-slate-300">
+								{item.category}: {item.count}
+							</span>
+						))}
+					</div>
+				</header>
+
+				<section class="space-y-4">
+					{
+						posts.map((post) => {
+							const category = post.data.category ?? 'Uncategorized';
+							const tones = categoryTone[category] ?? categoryTone.Uncategorized;
+							const displayTimestamp = post.data.timestamp ?? post.data.date.toISOString();
+
+							return (
+								<article
+									class:list={[
+										'rounded-xl border bg-slate-900/80 p-4 transition hover:-translate-y-0.5 hover:border-slate-500/60 sm:p-5',
+										tones.border,
+									]}
+								>
+									<div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+										<div class="flex flex-wrap items-center gap-2">
+											<span class:list={['inline-flex rounded-full px-2.5 py-1 font-mono text-xs ring-1', tones.badge]}>
+												{category}
+											</span>
+											<span class="rounded-full border border-slate-700 bg-slate-800/70 px-2.5 py-1 font-mono text-xs text-slate-300">
+												Age {post.data.writer_age_days} days
+											</span>
+										</div>
+										<time class="font-mono text-xs text-slate-400" datetime={post.data.date.toISOString()}>
+											{post.data.date.toLocaleDateString('en-US', {
+												day: '2-digit',
+												month: 'short',
+												year: 'numeric',
+											})}{' '}
+											@ {displayTimestamp}
+										</time>
+									</div>
+
+									<h2 class="text-lg font-semibold leading-tight text-slate-100 sm:text-xl">
+										<a class="underline decoration-slate-600/80 underline-offset-4 hover:decoration-slate-200" href={`/blog/${post.slug}/`}>
+											{post.data.title}
+										</a>
+									</h2>
+
+									<p class="mt-3 text-sm leading-relaxed text-slate-300">{extractPreview(post.body)}</p>
+								</article>
+							);
+						})
+					}
+				</section>
+			</div>
 		</main>
-		<Footer />
 	</body>
 </html>

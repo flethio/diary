@@ -1,7 +1,9 @@
 ---
 title: 'Second post'
 description: 'Lorem ipsum dolor sit amet'
-pubDate: 'Jul 15 2022'
+date: '2022-07-15'
+timestamp: '17:00'
+writer_age_days: '8'
 heroImage: '../../assets/blog-placeholder-4.jpg'
 ---
 
