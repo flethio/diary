@@ -19,8 +19,8 @@ jobs:
           BIRTH_DATE="2009-07-30" # <--- GANTI TANGGAL LAHIRMU
           
           DAYS=$(( ($(date -d "$DATE" +%s) - $(date -d "$BIRTH_DATE" +%s)) / 86400 ))
-          FILE="src/content/diary/${DATE}.md"
-          mkdir -p src/content/diary
+          FILE="src/content/blog/${DATE}.md"
+          mkdir -p src/content/blog
           
           echo "---
           title: 'Log Hari Ini'

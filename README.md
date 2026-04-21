@@ -1,0 +1,1 @@
+Diarii pake astroo

@@ -1,25 +1,84 @@
 ---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 import { getCollection } from 'astro:content';
-import Layout from '../layouts/Layout.astro';
-const entries = (await getCollection('diary')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+// Ambil semua catatan dan urutkan dari yang terbaru
+const posts = (await getCollection('blog')).sort(
+	(a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
 ---
-<Layout title="Thio Activity Log">
-  <main class="max-w-2xl mx-auto p-6">
-    <h1 class="text-3xl font-bold mb-8">Activity <span class="text-blue-500">Log</span></h1>
-    <div class="space-y-8 border-l-2 border-slate-800 ml-4">
-      {entries.map(entry => (
-        <div class="relative pl-8">
-          <div class="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-blue-500 border-4 border-slate-950"></div>
-          <time class="text-xs text-slate-500 font-mono">{entry.data.date.toDateString()} | {entry.data.timestamp} WITA</time>
-          <h2 class="text-xl font-semibold text-white">{entry.data.title}</h2>
-          <div class="prose prose-invert mt-2 text-slate-400">
-            <entry.Content />
-          </div>
-          <div class="mt-2 text-[10px] text-blue-400 uppercase tracking-widest">
-            ⏳ {entry.data.writer_age_days}
-          </div>
-        </div>
-      ))}
-    </div>
-  </main>
-</Layout>
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+		<style>
+			main {
+				width: 960px;
+			}
+			.log-container {
+				margin-top: 2rem;
+			}
+			.log-card {
+				padding: 1.5rem;
+				border: 1px solid #e5e7eb;
+				border-radius: 12px;
+				margin-bottom: 1.5rem;
+				transition: transform 0.2s;
+			}
+			.log-card:hover {
+				transform: translateY(-2px);
+				border-color: #3b82f6;
+			}
+			.meta {
+				font-size: 0.8rem;
+				color: #6b7280;
+				margin-bottom: 0.5rem;
+			}
+			.age-badge {
+				background: #eff6ff;
+				color: #1d4ed8;
+				padding: 2px 8px;
+				border-radius: 99px;
+				font-weight: bold;
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>🚀 Thio's Activity Log</h1>
+			<p>Catatan otomatis setiap jam 17:00 WITA untuk nge-track progres belajar.</p>
+
+			<section class="log-container">
+				{
+					posts.map((post) => (
+						<div class="log-card">
+							<div class="meta">
+								<time datetime={post.data.date.toISOString()}>
+									{post.data.date.toLocaleDateString('id-ID', {
+										day: 'numeric',
+										month: 'long',
+										year: 'numeric',
+									})}
+								</time> 
+								• <span>{post.data.timestamp} WITA</span>
+							</div>
+							<h3 style="margin: 0.5rem 0;">
+								<a href={`/blog/${post.slug}/`}>{post.data.title}</a>
+							</h3>
+							<p style="font-size: 0.9rem; color: #4b5563;">
+								Status: <span class="age-badge">⏳ {post.data.writer_age_days}</span> 
+								{post.data.mood && <span> • ✨ {post.data.mood}</span>}
+							</p>
+						</div>
+					))
+				}
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>
