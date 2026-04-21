@@ -1,0 +1,43 @@
+name: Daily Diary Bot
+on:
+  schedule:
+    - cron: '0 9 * * *' # Jam 17:00 WITA
+  workflow_dispatch:
+
+jobs:
+  create-diary:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate Template
+        run: |
+          export TZ="Asia/Makassar"
+          DATE=$(date +'%Y-%m-%d')
+          TIME=$(date +'%H:%M:%S')
+          BIRTH_DATE="2009-07-30" # <--- GANTI TANGGAL LAHIRMU
+          
+          DAYS=$(( ($(date -d "$DATE" +%s) - $(date -d "$BIRTH_DATE" +%s)) / 86400 ))
+          FILE="src/content/diary/${DATE}.md"
+          mkdir -p src/content/diary
+          
+          echo "---
+          title: 'Log Hari Ini'
+          date: $DATE
+          timestamp: '$TIME'
+          writer_age_days: '$DAYS hari'
+          mood: 'Neutral'
+          ---
+          ### +_= Apa yang dilakukan hari ini?
+          - [ ] 
+          
+          ### +_= Catatan
+          ..." > $FILE
+      - name: Push
+        run: |
+          git config --local user.email "thiosaputra@gmail.com"
+          git config --local user.name "Thio Saputra"
+          git add .
+          git commit -m "chore: log $DATE" || exit 0
+          git push
