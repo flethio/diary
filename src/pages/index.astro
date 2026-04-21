@@ -1,0 +1,25 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../layouts/Layout.astro';
+const entries = (await getCollection('diary')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+<Layout title="Thio Activity Log">
+  <main class="max-w-2xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-8">Activity <span class="text-blue-500">Log</span></h1>
+    <div class="space-y-8 border-l-2 border-slate-800 ml-4">
+      {entries.map(entry => (
+        <div class="relative pl-8">
+          <div class="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-blue-500 border-4 border-slate-950"></div>
+          <time class="text-xs text-slate-500 font-mono">{entry.data.date.toDateString()} | {entry.data.timestamp} WITA</time>
+          <h2 class="text-xl font-semibold text-white">{entry.data.title}</h2>
+          <div class="prose prose-invert mt-2 text-slate-400">
+            <entry.Content />
+          </div>
+          <div class="mt-2 text-[10px] text-blue-400 uppercase tracking-widest">
+            ⏳ {entry.data.writer_age_days}
+          </div>
+        </div>
+      ))}
+    </div>
+  </main>
+</Layout>
